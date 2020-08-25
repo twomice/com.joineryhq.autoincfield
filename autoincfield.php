@@ -6,6 +6,38 @@ use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
 /**
+ * Implements hook_civicrm_buildForm().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_buildForm
+ */
+function autoincfield_civicrm_buildForm($formName, &$form) {
+  if($formName == 'CRM_Custom_Form_Field') {
+    if ( $form->elementExists( 'data_type' ) ) {
+      $dataTypes = $form->getElement('data_type');
+      $newDataTypePlacement = count($dataTypes->_elements[0]->_options);
+
+      $autoIncArr = array(
+        'text' => 'Autoincrement',
+        'attr' => array(
+          'value' => $newDataTypePlacement,
+        ),
+      );
+
+      array_push($dataTypes->_elements[0]->_options, $autoIncArr);
+
+      $tpl = CRM_Core_Smarty::singleton();
+      $templatePath = $tpl->template_dir[0];
+      $form->addElement('text', 'min_value', ts('Minimum next value'));
+      CRM_Core_Region::instance('page-body')->add(array(
+        'template' => $templatePath . '/MinValueField.tpl',
+      ));
+
+      CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js');
+    }
+  }
+}
+
+/**
  * Implements hook_civicrm_config().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/

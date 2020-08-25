@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/Autoincfield</base>
+  <class>Autoincfield</class>
+  <name>civicrm_autoincfield</name>
+  <comment>FIXME</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique Autoincfield ID</comment>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>custom_field_id</name>
+    <type>int unsigned</type>
+    <comment>FK to Custom Field ID</comment>
+  </field>
+  <foreignKey>
+    <name>custom_field_id</name>
+    <table>civicrm_custom_field</table>
+    <key>id</key>
+    <onDelete>CASCADE</onDelete>
+  </foreignKey>
+
+  <field>
+    <name>min_value</name>
+    <type>int unsigned</type>
+    <comment>Integer, the minimum value upon next usage</comment>
+  </field>
+
+</table>
