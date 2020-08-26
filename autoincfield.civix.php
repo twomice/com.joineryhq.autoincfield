@@ -473,5 +473,11 @@ function _autoincfield_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NU
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
 function _autoincfield_civix_civicrm_entityTypes(&$entityTypes) {
-  $entityTypes = array_merge($entityTypes, []);
+  $entityTypes = array_merge($entityTypes, [
+    'CRM_Autoincfield_DAO_Autoincfield' => [
+      'name' => 'Autoincfield',
+      'class' => 'CRM_Autoincfield_DAO_Autoincfield',
+      'table' => 'civicrm_autoincfield',
+    ],
+  ]);
 }

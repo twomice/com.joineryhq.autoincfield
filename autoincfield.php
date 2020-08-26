@@ -5,6 +5,12 @@ require_once 'autoincfield.civix.php';
 use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
+function autoincfield_civicrm_preProcess($formName, &$form) {
+  if($formName == 'CRM_Custom_Form_Field') {
+
+  }
+}
+
 /**
  * Implements hook_civicrm_buildForm().
  *
@@ -25,14 +31,17 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
 
       array_push($dataTypes->_elements[0]->_options, $autoIncArr);
 
-      $tpl = CRM_Core_Smarty::singleton();
-      $templatePath = $tpl->template_dir[0];
-      $form->addElement('text', 'min_value', ts('Minimum next value'));
-      CRM_Core_Region::instance('page-body')->add(array(
-        'template' => $templatePath . '/MinValueField.tpl',
-      ));
+      CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js', 100, 'page-footer');
 
-      CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js');
+      $form->addElement('text', 'min_value', ts('Minimum next value'));
+      // Assign bhfe fields to the template.
+      $tpl = CRM_Core_Smarty::singleton();
+      $bhfe = $tpl->get_template_vars('beginHookFormElements');
+      if (!$bhfe) {
+        $bhfe = array();
+      }
+      $bhfe[] = 'min_value';
+      $form->assign('beginHookFormElements', $bhfe);
     }
   }
 }
