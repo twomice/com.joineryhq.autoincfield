@@ -6,9 +6,7 @@ use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
 function autoincfield_civicrm_preProcess($formName, &$form) {
-  if($formName == 'CRM_Custom_Form_Field') {
 
-  }
 }
 
 /**
@@ -20,19 +18,21 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
   if($formName == 'CRM_Custom_Form_Field') {
     if ( $form->elementExists( 'data_type' ) ) {
       $dataTypes = $form->getElement('data_type');
-      $newDataTypePlacement = count($dataTypes->_elements[0]->_options);
 
+      // Inject autoincrement in datatypes with the integer value
       $autoIncArr = array(
         'text' => 'Autoincrement',
         'attr' => array(
-          'value' => $newDataTypePlacement,
+          'value' => 1,
         ),
       );
-
       array_push($dataTypes->_elements[0]->_options, $autoIncArr);
 
+      // Add autoincfield js
       CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js', 100, 'page-footer');
 
+      // Create necessary fields
+      $form->addElement('hidden', 'autoinc');
       $form->addElement('text', 'min_value', ts('Minimum next value'));
       // Assign bhfe fields to the template.
       $tpl = CRM_Core_Smarty::singleton();
@@ -40,10 +40,54 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
       if (!$bhfe) {
         $bhfe = array();
       }
+      $bhfe[] = 'autoinc';
       $bhfe[] = 'min_value';
       $form->assign('beginHookFormElements', $bhfe);
+
+      // Set default values if update page
+      if (!empty($form->_defaultValues['id'])) {
+        $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
+          'custom_field_id' => $form->_defaultValues['id'],
+        ]);
+        $defaults = array();
+
+        $currentAutoincfield = array_values($getAutoincfield);
+
+        if (!empty($currentAutoincfield[0]['custom_field_id'])) {
+          $defaults['autoinc'] = 1;
+        }
+
+        if (!empty($currentAutoincfield[0]['min_value'])) {
+          $defaults['min_value'] = $currentAutoincfield[0]['min_value'];
+        }
+
+        $form->setDefaults($defaults);
+      }
     }
   }
+}
+
+function autoincfield_civicrm_postProcess($formName, &$form) {
+    if ($formName == 'CRM_Custom_Form_Field' && $form->_submitValues['autoinc']) {
+
+      // Get the id of the latest custom field base on the label that was submitted
+      $latestCustomField = civicrm_api3('CustomField', 'get', [
+        'sequential' => 1,
+        'return' => ['id'],
+        'label' => $form->_submitValues['label'],
+      ]);
+
+      $args = [
+        'custom_field_id' => $latestCustomField['id'],
+      ];
+
+      if (!empty($form->_submitValues['min_value'])) {
+        $args['min_value'] = $form->_submitValues['min_value'];
+      }
+
+      // Save in Autoincfield database
+      $createAutoincfield = civicrm_api3('Autoincfield', 'create', $args);
+    }
 }
 
 /**
