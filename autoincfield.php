@@ -5,8 +5,11 @@ require_once 'autoincfield.civix.php';
 use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
-function autoincfield_civicrm_preProcess($formName, &$form) {
-
+function autoincfield_civicrm_pageRun(&$page) {
+  $pageName = $page->getVar('_name');
+  if ($pageName == 'CRM_Custom_Page_Field') {
+    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
+  }
 }
 
 /**
@@ -67,28 +70,89 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
   }
 }
 
+/**
+ * Implements hook_civicrm_postProcess().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postProcess
+ */
 function autoincfield_civicrm_postProcess($formName, &$form) {
-    if ($formName == 'CRM_Custom_Form_Field' && $form->_submitValues['autoinc']) {
+  if ($formName == 'CRM_Custom_Form_Field' && $form->_submitValues['autoinc']) {
+    $values = $form->_submitValues;
+    // Get the id of the latest custom field
+    $latestCustomField = civicrm_api3('CustomField', 'get', [
+      'sequential' => 1,
+      'return' => ['id'],
+      'id' => $form->getVar('_id'),
+    ]);
 
-      // Get the id of the latest custom field base on the label that was submitted
-      $latestCustomField = civicrm_api3('CustomField', 'get', [
-        'sequential' => 1,
-        'return' => ['id'],
-        'label' => $form->_submitValues['label'],
-      ]);
 
-      $args = [
-        'custom_field_id' => $latestCustomField['id'],
-      ];
+    $minVal = 0;
+    $timestamp = date('Y-m-d H:i:s');
 
-      if (!empty($form->_submitValues['min_value'])) {
-        $args['min_value'] = $form->_submitValues['min_value'];
-      }
+    $args = [
+      'custom_field_id' => $latestCustomField['id'],
+    ];
 
-      // Save in Autoincfield database
-      $createAutoincfield = civicrm_api3('Autoincfield', 'create', $args);
+    if (!empty($form->_submitValues['min_value'])) {
+      $args['min_value'] = $form->_submitValues['min_value'];
+      $minVal = $form->_submitValues['min_value'];
     }
+
+    // Save in Autoincfield database
+    $createAutoincfield = civicrm_api3('Autoincfield', 'create', $args);
+    $customFieldID = $latestCustomField['id'];
+    // Create table for customfield
+    $table = array(
+      'name' => 'civicrm_autoincfield_' . $customFieldID,
+      'fields' => array(
+        array(
+          'name' => 'counter',
+          'type' => 'INT UNSIGNED AUTO_INCREMENT',
+          'primary' => TRUE,
+          'required' => TRUE,
+          'comment' => 'Primary key',
+        ),
+        array(
+          'name' => 'timestamp',
+          'type' => 'TIMESTAMP',
+          'required' => TRUE,
+          'comment' => 'Timestamp',
+        ),
+      ),
+    );
+
+    CRM_Core_BAO_SchemaHandler::createTable($table);
+
+    $sql = "INSERT INTO `civicrm_autoincfield_$customFieldID` (`counter`,`timestamp`) VALUES ($minVal, '$timestamp')";
+    CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+  }
 }
+
+/**
+ * Implements hook_civicrm_custom().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_custom
+ */
+// function autoincfield_civicrm_custom( $op, $groupID, $entityID, &$params ) {
+//     if ( $op != 'create' ) {
+//       return;
+//     }
+
+//     $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
+//       'custom_field_id' => $entityID,
+//     ]);
+
+//     $currentAutoincfield = array_values($getAutoincfield);
+//     $minVal = 0;
+//     $timestamp = date('Y-m-d H:i:s');
+
+//     if (!empty($currentAutoincfield[0]['min_value'])) {
+//       $minVal = $currentAutoincfield[0]['min_value'] - 1;
+//     }
+
+//     $sql = "INSERT INTO `civicrm_autoincfield_$entityID` (`counter`,`timestamp`) VALUES ($minVal, $timestamp);";
+//     CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+// }
 
 /**
  * Implements hook_civicrm_config().
