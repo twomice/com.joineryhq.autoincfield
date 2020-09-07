@@ -10,6 +10,19 @@ function autoincfield_civicrm_pageRun(&$page) {
   if ($pageName == 'CRM_Custom_Page_Field') {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
+
+  // $fields = CRM_Core_BAO_CustomField::getFields('Participant');
+
+  // $result = civicrm_api3('CustomGroup', 'get', [
+  //   'sequential' => 1,
+  //   'id' => 3,
+  //   'return' => ["extends"],
+  // ]);
+  // $int = (int) filter_var($fields[4]['extends_entity_column_value'], FILTER_SANITIZE_NUMBER_INT);
+
+  // echo "<pre>";
+  // print_r($int);
+  // echo "</pre>";
 }
 
 /**
@@ -120,9 +133,6 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
     );
 
     CRM_Core_BAO_SchemaHandler::createTable($table);
-
-    // $sql = "INSERT INTO `civicrm_autoincfield_$customFieldID` (`counter`,`timestamp`) VALUES ($args['min_value'], '$timestamp')";
-    // CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
   }
 }
 
@@ -132,22 +142,25 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_post
  */
 function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
-  if ($objectName == 'CustomField' && $op == 'create') {
+  if ($op == 'create') {
     $fields = CRM_Core_BAO_CustomField::getFields($objectName);
 
     foreach ($fields as $field) {
-      $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
-        'custom_field_id' => $field['id'],
-      ]);
+      if ($objectName == $field['extends']) {
+        $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
+          'custom_field_id' => $field['id'],
+        ]);
 
-      $currentAutoincfield = array_values($getAutoincfield);
+        $currentAutoincfield = array_values($getAutoincfield);
 
-      if (!empty($currentAutoincfield[0]['custom_field_id'])) {
-        $timestamp = date('Y-m-d H:i:s');
-        $fieldID = $currentAutoincfield[0]['custom_field_id'];
-        $autoincValue = $currentAutoincfield[0]['min_value'];
-        $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ($autoincValue, '$timestamp')";
-        CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+        if (!empty($currentAutoincfield[0]['custom_field_id'])) {
+          $timestamp = date('Y-m-d H:i:s');
+          $fieldID = $currentAutoincfield[0]['custom_field_id'];
+          $autoincValue = $currentAutoincfield[0]['min_value'];
+          // $text = json_encode($objectRef);
+          $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
+          CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+        }
       }
     }
   }
