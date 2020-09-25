@@ -21,7 +21,7 @@ function autoincfield_civicrm_pageRun(&$page) {
   // $int = (int) filter_var($fields[4]['extends_entity_column_value'], FILTER_SANITIZE_NUMBER_INT);
 
   // echo "<pre>";
-  // print_r($int);
+  // print_r($eventTypeCustomDataTypeID);
   // echo "</pre>";
 }
 
@@ -143,23 +143,105 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
  */
 function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
   if ($op == 'create') {
+    $subTypes = NULL;
+    $subName = NULL;
+
+    switch ($objectName) {
+      case 'Activity':
+        $subTypes = $objectRef->activity_type_id;
+        break;
+
+      case 'Campaign':
+        $subTypes = $objectRef->campaign_type_id;
+        break;
+
+      case 'Contribution':
+        $subTypes = $objectRef->financial_type_id;
+        break;
+
+      case 'Event':
+        $subTypes = $objectRef->event_type_id;
+        break;
+
+      case 'Grant':
+        $subTypes = $objectRef->grant_type_id;
+        break;
+
+      case 'Individual':
+        $subTypes = $objectRef->contact_sub_type;
+        break;
+
+      case 'Membership':
+        $subTypes = $objectRef->membership_type_id;
+        break;
+
+      case 'Organization':
+        $subTypes = $objectRef->contact_sub_type;
+        break;
+
+      case 'Relationship':
+        $subTypes = $objectRef->relationship_type_id;
+        break;
+
+      case 'Participant':
+        $subTypes = $objectRef->event_id;
+
+        $fields = CRM_Core_BAO_CustomField::getFields($objectName);
+        foreach ($fields as $field) {
+          if ($field['extends_entity_column_id'] == 1) {
+            $customDataType = CRM_Core_OptionGroup::values('custom_data_type', FALSE, FALSE, FALSE, NULL, 'name');
+            $roleCustomDataTypeID = array_search('ParticipantRole', $customDataType);
+            $subTypes = $objectRef->role_id;
+            $subName = $roleCustomDataTypeID;
+          } else if ($field['extends_entity_column_id'] == 3) {
+            $customDataType = CRM_Core_OptionGroup::values('custom_data_type', FALSE, FALSE, FALSE, NULL, 'name');
+            $eventTypeID = CRM_Core_DAO::getFieldValue("CRM_Event_DAO_Event", $objectRef->event_id, 'event_type_id', 'id');
+            $eventTypeCustomDataTypeID = array_search('ParticipantEventType', $customDataType);
+            $subTypes = $eventTypeID;
+            $subName = $eventTypeCustomDataTypeID;
+          }
+        }
+        break;
+    }
+
+    $customGroupFieldTree = CRM_Core_BAO_CustomGroup::getTree(
+      $objectName,
+      NULL,
+      $objectId,
+      -1,
+      $subTypes,
+      $subName,
+      NULL,
+      NULL,
+      TRUE
+    );
+
     $fields = CRM_Core_BAO_CustomField::getFields($objectName);
+    $getAutoincfield = civicrm_api3('Autoincfield', 'get', []);
+    $autoinc = [];
 
-    foreach ($fields as $field) {
-      if ($objectName == $field['extends']) {
-        $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
-          'custom_field_id' => $field['id'],
-        ]);
+    foreach ($getAutoincfield as $autoincfield) {
+      $autoinc[$autoincfield['custom_field_id']]['id'] = $autoincfield['custom_field_id'];
+      $autoinc[$autoincfield['custom_field_id']]['min_value'] = $autoincfield['min_value'];
+    }
 
-        $currentAutoincfield = array_values($getAutoincfield);
+    foreach ($customGroupFieldTree as $customFields) {
+      if (!empty($customFields['fields'])) {
+        foreach ($customFields['fields'] as $field) {
+          if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
+            $fieldID = $field['id'];
+            $timestamp = date('Y-m-d H:i:s');
+            $autoincValue = $autoinc[$fieldID]['min_value'];
+            $hasValue = CRM_Core_DAO::checkFieldHasAlwaysValue("civicrm_autoincfield_$fieldID", 'counter', '');
+            // $text = json_encode($customGroupFieldTree);
 
-        if (!empty($currentAutoincfield[0]['custom_field_id'])) {
-          $timestamp = date('Y-m-d H:i:s');
-          $fieldID = $currentAutoincfield[0]['custom_field_id'];
-          $autoincValue = $currentAutoincfield[0]['min_value'];
-          // $text = json_encode($objectRef);
-          $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
-          CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+            if (!$hasValue) {
+              $autoincValue = '';
+            }
+
+            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`, `text`) VALUES ('$autoincValue', '$timestamp')";
+            CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+          }
         }
       }
     }
