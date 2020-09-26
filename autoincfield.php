@@ -18,8 +18,8 @@ function autoincfield_civicrm_pageRun(&$page) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_buildForm
  */
 function autoincfield_civicrm_buildForm($formName, &$form) {
-  if($formName == 'CRM_Custom_Form_Field') {
-    if ( $form->elementExists( 'data_type' ) ) {
+  if ($formName == 'CRM_Custom_Form_Field') {
+    if ($form->elementExists('data_type')) {
       $dataTypes = $form->getElement('data_type');
 
       // Inject autoincrement in datatypes with the integer value
@@ -127,7 +127,7 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_post
  */
-function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
+function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
   // If new entity is created
   if ($op == 'create') {
     // Set subTypes and subName as NULL default for the getTree function
@@ -186,7 +186,8 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
             $roleCustomDataTypeID = array_search('ParticipantRole', $customDataType);
             $subTypes = $objectRef->role_id;
             $subName = $roleCustomDataTypeID;
-          } else if ($field['extends_entity_column_id'] == 3) {
+          }
+          elseif ($field['extends_entity_column_id'] == 3) {
             $customDataType = CRM_Core_OptionGroup::values('custom_data_type', FALSE, FALSE, FALSE, NULL, 'name');
             $eventTypeID = CRM_Core_DAO::getFieldValue("CRM_Event_DAO_Event", $objectRef->event_id, 'event_type_id', 'id');
             $eventTypeCustomDataTypeID = array_search('ParticipantEventType', $customDataType);
@@ -238,7 +239,7 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
 
             // Save to the database custom table
             $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
-            CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+            CRM_Core_DAO::executeQuery($sql, CRM_Core_DAO::$_nullArray);
           }
         }
       }
