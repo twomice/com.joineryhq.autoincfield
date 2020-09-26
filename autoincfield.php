@@ -10,19 +10,6 @@ function autoincfield_civicrm_pageRun(&$page) {
   if ($pageName == 'CRM_Custom_Page_Field') {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
-
-  // $fields = CRM_Core_BAO_CustomField::getFields('Participant');
-
-  // $result = civicrm_api3('CustomGroup', 'get', [
-  //   'sequential' => 1,
-  //   'id' => 3,
-  //   'return' => ["extends"],
-  // ]);
-  // $int = (int) filter_var($fields[4]['extends_entity_column_value'], FILTER_SANITIZE_NUMBER_INT);
-
-  // echo "<pre>";
-  // print_r($eventTypeCustomDataTypeID);
-  // echo "</pre>";
 }
 
 /**
@@ -62,9 +49,10 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
 
       // Set default values if update page
       if (!empty($form->_defaultValues['id'])) {
-        $getAutoincfield = civicrm_api3('Autoincfield', 'get', [
-          'custom_field_id' => $form->_defaultValues['id'],
-        ]);
+        $getAutoincfield = \Civi\Api4\Autoincfield::get()
+          ->addWhere('custom_field.id', '=', $form->_defaultValues['id'])
+          ->execute();
+
         $defaults = array();
 
         $currentAutoincfield = array_values($getAutoincfield);
@@ -92,25 +80,23 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
   if ($formName == 'CRM_Custom_Form_Field' && $form->_submitValues['autoinc']) {
     $values = $form->_submitValues;
     // Get the id of the latest custom field
-    $latestCustomField = civicrm_api3('CustomField', 'get', [
-      'sequential' => 1,
-      'return' => ['id'],
-      'id' => $form->getVar('_id'),
-    ]);
+    $latestCustomField = \Civi\Api4\CustomField::get()
+      ->addWhere('id', '=', $form->getVar('_id'))
+      ->execute();
 
+    $customFieldID = $latestCustomField[0]['id'];
     $minVal = 0;
-    $args = [
-      'custom_field_id' => $latestCustomField['id'],
-      'min_value' => $minVal,
-    ];
 
     if (!empty($form->_submitValues['min_value'])) {
       $args['min_value'] = $form->_submitValues['min_value'];
     }
 
     // Save in Autoincfield database
-    $createAutoincfield = civicrm_api3('Autoincfield', 'create', $args);
-    $customFieldID = $latestCustomField['id'];
+    $createAutoincfield = \Civi\Api4\Autoincfield::create()
+      ->addValue('custom_field_id', $customFieldID)
+      ->addValue('min_value', $minVal)
+      ->execute();
+
     // Create table for customfield
     $table = array(
       'name' => 'civicrm_autoincfield_' . $customFieldID,
@@ -225,7 +211,7 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
     );
 
     // Get all data on autoincfield table
-    $getAutoincfieldData = civicrm_api3('Autoincfield', 'get', []);
+    $getAutoincfieldData = \Civi\Api4\Autoincfield::get()->execute();
     $autoinc = [];
 
     // Sort data to match on getTreeResults

@@ -3,11 +3,10 @@ cj(function($) {
     var $this = cj(this);
     var customFieldID = $this.find('td:first-child').text();
 
-    CRM.api3('Autoincfield', 'get', {
-      "sequential": 1,
-      "custom_field_id": customFieldID
-    }).then(function(result) {
-      if (result[0]) {
+    CRM.api4('Autoincfield', 'get', {
+      where: [["custom_field.id", "=", customFieldID]]
+    }).then(function(autoincfields) {
+      if (autoincfields[0]) {
         $this.find('td:nth-child(3)').text('Autoincrement').next().text('');
       }
     });
