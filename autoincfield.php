@@ -142,10 +142,14 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_post
  */
 function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
+  // If new entity is created
   if ($op == 'create') {
+    // Set subTypes and subName as NULL default for the getTree function
+    // https://doc.symbiotic.coop/dev/civicrm/v47/phpdoc/CRM_Core_BAO_CustomGroup.html#method_getTree
     $subTypes = NULL;
     $subName = NULL;
 
+    // Update subTypes value if $objectName match the case
     switch ($objectName) {
       case 'Activity':
         $subTypes = $objectRef->activity_type_id;
@@ -186,6 +190,9 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
       case 'Participant':
         $subTypes = $objectRef->event_id;
 
+        // Update subTypes and $subName value to match on Participant $objectname
+        // Check CRM\Event\Form\ParticipantView.php line 136
+        // ParticipantEventType is not working yet
         $fields = CRM_Core_BAO_CustomField::getFields($objectName);
         foreach ($fields as $field) {
           if ($field['extends_entity_column_id'] == 1) {
@@ -204,7 +211,8 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
         break;
     }
 
-    $customGroupFieldTree = CRM_Core_BAO_CustomGroup::getTree(
+    // Set getTree function
+    $getTreeResults = CRM_Core_BAO_CustomGroup::getTree(
       $objectName,
       NULL,
       $objectId,
@@ -216,30 +224,34 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
       TRUE
     );
 
-    $fields = CRM_Core_BAO_CustomField::getFields($objectName);
-    $getAutoincfield = civicrm_api3('Autoincfield', 'get', []);
+    // Get all data on autoincfield table
+    $getAutoincfieldData = civicrm_api3('Autoincfield', 'get', []);
     $autoinc = [];
 
-    foreach ($getAutoincfield as $autoincfield) {
+    // Sort data to match on getTreeResults
+    foreach ($getAutoincfieldData as $autoincfield) {
       $autoinc[$autoincfield['custom_field_id']]['id'] = $autoincfield['custom_field_id'];
       $autoinc[$autoincfield['custom_field_id']]['min_value'] = $autoincfield['min_value'];
     }
 
-    foreach ($customGroupFieldTree as $customFields) {
-      if (!empty($customFields['fields'])) {
-        foreach ($customFields['fields'] as $field) {
+    foreach ($getTreeResults as $getTreeFields) {
+      if (!empty($getTreeFields['fields'])) {
+        foreach ($getTreeFields['fields'] as $field) {
+          // If field id is not empty and it match on the autoincfield data
           if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
             $fieldID = $field['id'];
             $timestamp = date('Y-m-d H:i:s');
             $autoincValue = $autoinc[$fieldID]['min_value'];
-            $hasValue = CRM_Core_DAO::checkFieldHasAlwaysValue("civicrm_autoincfield_$fieldID", 'counter', '');
-            // $text = json_encode($customGroupFieldTree);
 
-            if (!$hasValue) {
+            // Check if there is a data on the counter column
+            // Update autoincValue var to blank if there is value
+            $customAutoincValue = CRM_Core_DAO::checkFieldHasAlwaysValue("civicrm_autoincfield_$fieldID", 'counter', '');
+            if (!$customAutoincValue) {
               $autoincValue = '';
             }
 
-            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`, `text`) VALUES ('$autoincValue', '$timestamp')";
+            // Save to the database custom table
+            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
             CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
           }
         }
