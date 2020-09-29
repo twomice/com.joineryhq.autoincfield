@@ -25,7 +25,7 @@ cj(function($) {
 
       // Select Autoincrement
       cj('#data_type_0 option:selected').text('Autoincrement').trigger('change');
-      if_autoincrement()
+      if_autoincrement();
     }
 
     // If Autoincrement is selected or not selected
