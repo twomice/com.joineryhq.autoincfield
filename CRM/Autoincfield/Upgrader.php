@@ -37,9 +37,17 @@ class CRM_Autoincfield_Upgrader extends CRM_Autoincfield_Upgrader_Base {
   /**
    * Example: Run an external SQL script when the module is uninstalled.
    */
-  // public function uninstall() {
-  //  $this->executeSqlFile('sql/myuninstall.sql');
-  // }
+  public function uninstall() {
+    // Remove Custom autoinc table
+    $result = CRM_Core_DAO::executeQuery('SELECT custom_field_id FROM civicrm_autoincfield');
+    while ($result->fetch()) {
+      $autoincCustomID = $result->custom_field_id;
+      $sql = "DROP TABLE IF EXISTS `civicrm_autoincfield_$autoincCustomID`";
+      CRM_Core_DAO::executeQuery($sql);
+    }
+
+    $this->executeSqlFile('sql/auto_uninstall.sql');
+  }
 
   /**
    * Example: Run a simple query when a module is enabled.

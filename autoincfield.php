@@ -10,6 +10,13 @@ function autoincfield_civicrm_pageRun(&$page) {
   if ($pageName == 'CRM_Custom_Page_Field') {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
+
+  // $result = CRM_Core_DAO::executeQuery('SELECT custom_field_id FROM civicrm_autoincfield');
+  // while ($result->fetch()) {
+  //   echo "<pre>";
+  //   print_r($result->custom_field_id);
+  //   echo "</pre>";
+  // }
 }
 
 /**
@@ -239,6 +246,10 @@ function autoincfield_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
             // Save to the database custom table
             $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
             CRM_Core_DAO::executeQuery( $sql, CRM_Core_DAO::$_nullArray );
+
+            // Delete data that's more than 24 hours
+            $sqlDeleteData = "DELETE FROM `civicrm_autoincfield_$fieldID` WHERE `timestamp` <= DATE_SUB(NOW(), INTERVAL 1 DAY)";
+            CRM_Core_DAO::executeQuery( $sqlDeleteData );
           }
         }
       }
