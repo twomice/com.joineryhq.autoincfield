@@ -21,6 +21,7 @@ cj(function($) {
       if(cj('.crm-frozen-field').length) {
         var $newFrozenFieldHtml = cj('.crm-frozen-field').html().replace('Integer', 'Autoincrement').replace('Text', '');
         cj('.crm-frozen-field').html($newFrozenFieldHtml);
+        cj('#min_value').attr('readonly', true);
       }
 
       // Select Autoincrement

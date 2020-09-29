@@ -62,14 +62,12 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
 
         $defaults = array();
 
-        $currentAutoincfield = array_values($getAutoincfield);
-
-        if (!empty($currentAutoincfield[0]['custom_field_id'])) {
+        if (!empty($getAutoincfield[0]['custom_field_id'])) {
           $defaults['autoinc'] = 1;
         }
 
-        if (!empty($currentAutoincfield[0]['min_value'])) {
-          $defaults['min_value'] = $currentAutoincfield[0]['min_value'];
+        if (!empty($getAutoincfield[0]['min_value'])) {
+          $defaults['min_value'] = $getAutoincfield[0]['min_value'];
         }
 
         $form->setDefaults($defaults);
@@ -95,37 +93,47 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
     $minVal = 0;
 
     if (!empty($form->_submitValues['min_value'])) {
-      $args['min_value'] = $form->_submitValues['min_value'];
+      $minVal = $form->_submitValues['min_value'];
     }
 
-    // Save in Autoincfield database
-    $createAutoincfield = \Civi\Api4\Autoincfield::create()
-      ->addValue('custom_field_id', $customFieldID)
-      ->addValue('min_value', $minVal)
-      ->execute();
+    // Check table if not exist yet
+    if (!CRM_Core_DAO::checkTableExists('civicrm_autoincfield_' . $customFieldID)) {
+      // Save in Autoincfield database
+      $createAutoincfield = \Civi\Api4\Autoincfield::create()
+        ->addValue('custom_field_id', $customFieldID)
+        ->addValue('min_value', $minVal)
+        ->execute();
 
-    // Create table for customfield
-    $table = array(
-      'name' => 'civicrm_autoincfield_' . $customFieldID,
-      'attributes' => '',
-      'fields' => array(
-        array(
-          'name' => 'counter',
-          'type' => 'INT UNSIGNED AUTO_INCREMENT',
-          'primary' => TRUE,
-          'required' => TRUE,
-          'comment' => 'Primary key',
+      // Create table for customfield
+      $table = array(
+        'name' => 'civicrm_autoincfield_' . $customFieldID,
+        'attributes' => '',
+        'fields' => array(
+          array(
+            'name' => 'counter',
+            'type' => 'INT UNSIGNED AUTO_INCREMENT',
+            'primary' => TRUE,
+            'required' => TRUE,
+            'comment' => 'Primary key',
+          ),
+          array(
+            'name' => 'timestamp',
+            'type' => 'TIMESTAMP',
+            'required' => TRUE,
+            'comment' => 'Timestamp',
+          ),
         ),
-        array(
-          'name' => 'timestamp',
-          'type' => 'TIMESTAMP',
-          'required' => TRUE,
-          'comment' => 'Timestamp',
-        ),
-      ),
-    );
+      );
 
-    CRM_Core_BAO_SchemaHandler::createTable($table);
+      CRM_Core_BAO_SchemaHandler::createTable($table);
+    }
+    // else {
+    //   // If table exist, its the update page, update min_value only
+    //   $results = \Civi\Api4\Autoincfield::update()
+    //   ->addWhere('custom_field_id', '=', $customFieldID)
+    //   ->addValue('min_value', $minVal)
+    //   ->execute();
+    // }
   }
 }
 
@@ -235,13 +243,13 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
           if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
             $fieldID = $field['id'];
             $timestamp = date('Y-m-d H:i:s');
-            $autoincValue = $autoinc[$fieldID]['min_value'];
+            $autoincValue = NULL;
 
             // Check if there is a data on the counter column
-            // Update autoincValue var to blank if there is value
+            // Update autoincValue to the min_value if there is no data on the counter column
             $customAutoincValue = CRM_Core_DAO::checkFieldHasAlwaysValue("civicrm_autoincfield_$fieldID", 'counter', '');
-            if (!$customAutoincValue) {
-              $autoincValue = '';
+            if ($customAutoincValue) {
+              $autoincValue = $autoinc[$fieldID]['min_value'];
             }
 
             // Save to the database custom table
@@ -255,6 +263,12 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
         }
       }
     }
+  }
+
+  // Drop custom table if custom field is deleted
+  if ($op == 'delete' && $objectName == 'CustomField') {
+    $sqlDrop = "DROP TABLE IF EXISTS `civicrm_autoincfield_$objectId`";
+    CRM_Core_DAO::executeQuery($sqlDrop);
   }
 }
 
