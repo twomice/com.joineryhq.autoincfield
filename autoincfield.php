@@ -256,10 +256,8 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
             // Get custom field name for updating the values
             $customFieldName = $field['name'];
 
-            $text = json_encode($getTreeFields);
-
             // Save to the database autoincfield custom table
-            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`,`text`) VALUES ('$autoincValue', NOW(), '$text')";
+            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', NOW())";
             CRM_Core_DAO::executeQuery($sql);
 
             // Add value to autoincrement field in each user Contact, Participant, Contribution, Event etc...
