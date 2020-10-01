@@ -242,19 +242,51 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
           // If field id is not empty and it match on the autoincfield data
           if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
             $fieldID = $field['id'];
-            $timestamp = date('Y-m-d H:i:s');
             $autoincValue = NULL;
 
             // Check if there is a data on the counter column
             // Update autoincValue to the min_value if there is no data on the counter column
-            $customAutoincValue = CRM_Core_DAO::checkFieldHasAlwaysValue("civicrm_autoincfield_$fieldID", 'counter', '');
-            if ($customAutoincValue) {
+            $recordCount = CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM civicrm_autoincfield_$fieldID");
+            if (!$recordCount) {
               $autoincValue = $autoinc[$fieldID]['min_value'];
             }
 
-            // Save to the database custom table
-            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', '$timestamp')";
-            CRM_Core_DAO::executeQuery($sql, CRM_Core_DAO::$_nullArray);
+            // Get custom group table name and column field for updating the values
+            $customGroupTable = $getTreeFields['table_name'];
+            $customGroupColumn = $field['column_name'];
+
+            // $text = $objectId . ' ' . $customGroupTable . ' ' . $customGroupColumn;
+
+            // Save to the database autoincfield custom table
+            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', NOW())";
+            CRM_Core_DAO::executeQuery($sql);
+
+            $queryLastID = "SELECT LAST_INSERT_ID();";
+            $lastID = CRM_Core_DAO::singleValueQuery($queryLastID);
+
+            // $apiEntityName = '';
+            // if (
+            //   $objectName == 'Individual'
+            //   || $objectName == 'Organization'
+            //   || $objectName == 'Household'
+            // ) {
+            //   $apiEntityName = 'Contact';
+            // }
+            // else {
+            //   $apiEntityName = $objectName;
+            // }
+
+            // civirm_api4($apiEntityName, 'create', ['id' => $objectId, 'custom_'. $fieldID => $lastId]);
+
+            $queryCustomGroupTable = "SELECT * FROM `$customGroupTable` where `entity_id` = $objectId";
+            $exist = CRM_Core_DAO::singleValueQuery($queryCustomGroupTable);
+            if ($exist) {
+              // Save to the database custom group table
+              $sqlUpdate = "UPDATE `$customGroupTable` SET `$customGroupColumn` = $lastID WHERE `entity_id` = $objectId";
+              CRM_Core_DAO::executeQuery($sqlUpdate);
+            } else {
+              // INSERT HERE!!
+            }
 
             // Delete data that's more than 24 hours
             $sqlDeleteData = "DELETE FROM `civicrm_autoincfield_$fieldID` WHERE `timestamp` <= DATE_SUB(NOW(), INTERVAL 1 DAY)";
