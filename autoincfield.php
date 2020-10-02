@@ -111,6 +111,7 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
         'fields' => array(
           array(
             'name' => 'counter',
+            // TODO: remove UNSIGNED here, in order to support negative values:
             'type' => 'INT UNSIGNED AUTO_INCREMENT',
             'primary' => TRUE,
             'required' => TRUE,
@@ -126,6 +127,14 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
       );
 
       CRM_Core_BAO_SchemaHandler::createTable($table);
+
+      // TODO: insert a row in $table with counter=($min_value -1);
+      // Example code:
+      /*
+       $counterVal = ($minVal - 1);
+       CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (counter, timestamp) VALUES ($counterVal, NOW())");
+      */
+
     }
     // else {
     //   // If table exist, its the update page, update min_value only
@@ -244,29 +253,16 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
           // If field id is not empty and it match on the autoincfield data
           if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
             $fieldID = $field['id'];
-            $autoincValue = NULL;
-
-            // Check if there is a data on the counter column
-            // Update autoincValue to the min_value if there is no data on the counter column
-            $recordCount = CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM civicrm_autoincfield_$fieldID");
-            if (!$recordCount) {
-              $autoincValue = $autoinc[$fieldID]['min_value'];
+            $autoincValue = _autoincfield_get_nextAutoincValue($fieldID);
+            if ($autoincValue == NULL) {
+              // Autoincrement value could not be determined. Log an error and do
+              // nothing more on this field.
+              Civi::log()->error('AUTOINCFIELD: could not determined next autoincrement value for custom field ' . $fieldID);
+              continue;
             }
-
-            // Get custom field name for updating the values
-            $customFieldName = $field['name'];
-
-            // Save to the database autoincfield custom table
-            $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', NOW())";
-            CRM_Core_DAO::executeQuery($sql);
-
-            // Add value to autoincrement field in each user Contact, Participant, Contribution, Event etc...
-            $queryLastID = "SELECT LAST_INSERT_ID();";
-            $lastID = CRM_Core_DAO::singleValueQuery($queryLastID);
-
             $apiEntityName = $objectName;
             if (
-              $objectName == 'Individual'
+              $objeautoincValuectName == 'Individual'
               || $objectName == 'Organization'
               || $objectName == 'Household'
             ) {
@@ -278,7 +274,7 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
                 ['id', '=', $objectId],
               ],
               'values' => [
-                "{$customGroupName}.{$customFieldName}" => $lastID,
+                "{$customGroupName}.{$customFieldName}" => $autoincValue,
               ],
             ]);
 
@@ -463,3 +459,35 @@ function autoincfield_civicrm_themes(&$themes) {
 //  ));
 //  _autoincfield_civix_navigationMenu($menu);
 //}
+
+/**
+ * For a given autoincfield, determine the appropriate next autoincrement value.
+ *
+ * @param Int $fieldID
+ *
+ * @return Int|NULL
+ *    Integer next value, or NULL if that can't be determined.
+ */
+function _autoincfield_get_nextAutoincValue($fieldID) {
+  $autoincValue = NULL;
+
+  // Check if there is a data on the counter column
+  // Update autoincValue to the min_value if there is no data on the counter column
+  $recordCount = CRM_Core_DAO::singleValueQuery("SELECT COUNT(*) FROM civicrm_autoincfield_$fieldID");
+  if (!$recordCount) {
+    $autoincValue = $autoinc[$fieldID]['min_value'];
+  }
+
+  // Get custom field name for updating the values
+  $customFieldName = $field['name'];
+
+  // Save to the database autoincfield custom table
+  $sql = "INSERT INTO `civicrm_autoincfield_$fieldID` (`counter`,`timestamp`) VALUES ('$autoincValue', NOW())";
+  CRM_Core_DAO::executeQuery($sql);
+
+  // Add value to autoincrement field in each user Contact, Participant, Contribution, Event etc...
+  $queryLastID = "SELECT LAST_INSERT_ID();";
+  $lastID = CRM_Core_DAO::singleValueQuery($queryLastID);
+
+  return $autoincValue;
+}
