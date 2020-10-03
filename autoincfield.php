@@ -70,6 +70,49 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
 }
 
 /**
+ * Implements hook_civicrm_validateForm().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_validateForm/
+ */
+function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ($formName == 'CRM_Custom_Form_Field' && $fields['autoinc']) {
+    if ($fields['min_value'] < 0) {
+      $errors['min_value'] = ts('Minimum next value field should not be below zero.');
+      return;
+    }
+
+    if (!is_numeric($fields['min_value'])) {
+      $errors['min_value'] = ts('Minimum next value field should only have numeric value.');
+      return;
+    }
+
+    if ($form->getVar('_id')) {
+      $customFieldID = $form->getVar('_id');
+      $autoincfield = \Civi\Api4\Autoincfield::get()
+      ->addWhere('custom_field_id', '=', $customFieldID)
+      ->execute();
+
+      if ($fields['min_value'] != $autoincfield[0]['min_value']) {
+        $query = "SELECT * FROM `civicrm_autoincfield_$customFieldID` ORDER BY `counter` DESC";
+        $customAutoincfield = CRM_Core_DAO::singleValueQuery($query);
+        $counterVal = $customAutoincfield;
+
+        if ($counterVal < $autoincfield[0]['min_value']) {
+          $counterVal = $counterVal + 1;
+        }
+
+        if ($fields['min_value'] <= $counterVal) {
+          $errors['min_value'] = ts("Minimum next value field should not be below or equal to {$counterVal}.");
+          return;
+        }
+      }
+    }
+  }
+
+  return;
+}
+
+/**
  * Implements hook_civicrm_postProcess().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postProcess
@@ -121,10 +164,28 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
 
       CRM_Core_BAO_SchemaHandler::createTable($table);
 
+
       // TODO: insert a row in $table with counter=($min_value -1);
       // Example code:
       $counterVal = ($minVal - 1);
-      CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ($counterVal, NOW())");
+      CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ('$counterVal', NOW())");
+    }
+    else {
+
+      $autoincfield = \Civi\Api4\Autoincfield::get()
+      ->addWhere('custom_field_id', '=', $customFieldID)
+      ->execute();
+
+      if ($minVal != $autoincfield[0]['min_value']) {
+        // If table exist, its the update page, update min_value only
+        $updateResults = \Civi\Api4\Autoincfield::update()
+        ->addWhere('custom_field_id', '=', $customFieldID)
+        ->addValue('min_value', $minVal)
+        ->execute();
+
+        $counterVal = ($minVal - 1);
+        CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ('$counterVal', NOW())");
+      }
     }
   }
 }
