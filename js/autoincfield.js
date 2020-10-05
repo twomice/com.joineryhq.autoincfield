@@ -5,7 +5,7 @@ cj(function($) {
     $minVal.addClass('crm-custom-field-form-block-min_value autoinc-field').attr('id','autoinc-min-value').hide();
     $minVal.insertAfter('#hideDesc');
     cj('.form-layout-compressed').remove();
-
+    cj('#min_value').parent().append('<br /><span class="description"> WARNING: This value can\'t be decreased, e..g if you set it to 10 now, you\'ll never be able to set it to 9 or below.</span>');
     // If autoincrement is selected
     function if_autoincrement() {
       cj('#autoinc-min-value').show();
