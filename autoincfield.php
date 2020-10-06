@@ -8,7 +8,7 @@ use CRM_Autoincfield_ExtensionUtil as E;
 function autoincfield_civicrm_pageRun(&$page) {
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Custom_Page_Field') {
-    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
+    // CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
 }
 
@@ -20,22 +20,11 @@ function autoincfield_civicrm_pageRun(&$page) {
 function autoincfield_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Custom_Form_Field') {
     if ($form->elementExists('data_type')) {
-      $dataTypes = $form->getElement('data_type');
-
-      // Inject autoincrement in datatypes with the integer value
-      $autoIncArr = array(
-        'text' => 'Autoincrement',
-        'attr' => array(
-          'value' => 1,
-        ),
-      );
-      array_push($dataTypes->_elements[0]->_options, $autoIncArr);
-
       // Add autoincfield js
       CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js', 100, 'page-footer');
 
       // Create necessary fields
-      $form->addElement('hidden', 'autoinc');
+      $form->addElement('checkbox', 'autoinc', ts('Is Autoincrement?'));
       $form->addElement('text', 'min_value', ts('Minimum next value'));
       // Assign bhfe fields to the template.
       $tpl = CRM_Core_Smarty::singleton();

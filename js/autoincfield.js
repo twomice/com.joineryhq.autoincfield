@@ -2,41 +2,46 @@ cj(function($) {
   cj(document).ready(function(){
     // Add min value field to the right place and remove original field
     var $minVal = cj('#min_value').parents('tr');
-    $minVal.addClass('crm-custom-field-form-block-min_value autoinc-field').attr('id','autoinc-min-value').hide();
+    var $isAutoinc = cj('#autoinc').parents('tr');
+    $minVal.addClass('crm-custom-field-form-block-min_value autoinc-min-value').attr('id','autoinc-min-value').hide();
+    $isAutoinc.addClass('crm-custom-field-form-block-min_value autoinc-field').attr('id','autoinc-field').hide();
     $minVal.insertAfter('#hideDesc');
+    $isAutoinc.insertAfter('.crm-custom-field-form-block-data_type');
     cj('.form-layout-compressed').remove();
     cj('#min_value').parent().append('<br /><span class="description"> WARNING: This value can\'t be decreased, e..g if you set it to 10 now, you\'ll never be able to set it to 9 or below.</span>');
-    // If autoincrement is selected
-    function if_autoincrement() {
+
+    // If edit page
+    if(cj('#autoinc').is(':checked')) {
+      cj('#autoinc').hide().parent().prepend('<span>[X]</span>');
+      cj('#autoinc-field').show();
       cj('#autoinc-min-value').show();
-      cj('#hideDefault, #hideDesc, #data_type_1, .crm-custom-field-form-block-is_required, .crm-custom-field-form-block-is_view').hide();
-      cj('#is_view').prop('checked', true);
-      cj('input[name="autoinc"]').val(1);
+      cj('#hideDefault, #hideDesc, .crm-custom-field-form-block-is_required, .crm-custom-field-form-block-is_view').hide();
     }
 
     // If autoinc field has value
-    if(cj('input[name="autoinc"]').val()) {
-
-      // If update page
-      if(cj('.crm-frozen-field').length) {
-        var $newFrozenFieldHtml = cj('.crm-frozen-field').html().replace('Integer', 'Autoincrement').replace('Text', '');
-        cj('.crm-frozen-field').html($newFrozenFieldHtml);
-      }
-
-      // Select Autoincrement
-      cj('#data_type_0 option:selected').text('Autoincrement').trigger('change');
-      if_autoincrement();
-    }
-
-    // If Autoincrement is selected or not selected
-    cj('#data_type_0').change(function(){
-      if(cj('option:selected', this).text() === 'Autoincrement') {
-        if_autoincrement();
+    cj(document).on('click', '#autoinc', function(){
+      if(cj('#autoinc').is(':checked')) {
+        cj('#autoinc-min-value').show();
+        cj('#is_view').prop('checked', true);
+        cj('#is_required').prop('checked', false);
+        cj('#default_value').val('');
+        cj('#hideDefault, #hideDesc, .crm-custom-field-form-block-is_required, .crm-custom-field-form-block-is_view').hide();
       } else {
         cj('#autoinc-min-value').hide();
         cj('#is_view').prop('checked', false);
-        cj('.crm-custom-field-form-block-is_required, .crm-custom-field-form-block-is_view').show();
-        cj('input[name="autoinc"]').removeAttr('value');
+        cj('#hideDefault, #hideDesc, .crm-custom-field-form-block-is_required, .crm-custom-field-form-block-is_view').show();
+      }
+    });
+
+    // If data_type_0 equals to Integer is selected or not selected
+    cj('#data_type_0, #data_type_1').change(function(){
+      if(cj('#data_type_0 option:selected').text() === 'Integer' && cj('#data_type_1 option:selected').text() === 'Text') {
+        cj('#autoinc-field').show();
+      } else {
+        if(cj('#autoinc').is(':checked')) {
+          cj('#autoinc').trigger('click');
+        }
+        cj('#autoinc-field').hide();
       }
     });
   });
