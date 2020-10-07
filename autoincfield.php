@@ -134,7 +134,7 @@ function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form,
 
         $lastValue = $apiResults[0]["{$customGroupName}.{$customFieldName}"];
 
-        if (!empty($lastValue) && $lastValue > $fieldMinVal) {
+        if (!empty($lastValue) && $lastValue >= $fieldMinVal) {
           $errors['min_value'] = ts("Since this custom field has existing values. Minimum next value field should not be below or equal to this custom fields last value which is {$lastValue}.");
           return;
         }
