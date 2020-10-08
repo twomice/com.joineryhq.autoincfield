@@ -65,74 +65,44 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
  */
 function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   if ($formName == 'CRM_Custom_Form_Field' && $fields['autoinc']) {
-    $fieldMinVal = empty($fields['min_value']) ? 0 : $fields['min_value'];
+    $fieldMinVal = $fields['min_value'];
 
-    if ($fieldMinVal < 0) {
-      $errors['min_value'] = ts('Minimum next value field should not be below zero.');
-      return;
-    }
-
-    if (!is_numeric($fieldMinVal)) {
-      $errors['min_value'] = ts('Minimum next value field should only have numeric value.');
-      return;
-    }
-
-    if ($form->getVar('_id')) {
-      $customFieldID = $form->getVar('_id');
-      $autoincfield = \Civi\Api4\Autoincfield::get()
-      ->addWhere('custom_field_id', '=', $customFieldID)
-      ->execute();
-
-      if (!empty($autoincfield[0]['min_value']) && $fieldMinVal != $autoincfield[0]['min_value']) {
-        $query = "SELECT * FROM `civicrm_autoincfield_$customFieldID` ORDER BY `counter` DESC";
-        $customAutoincfield = CRM_Core_DAO::singleValueQuery($query);
-        $counterVal = $customAutoincfield;
-
-        if ($counterVal < $autoincfield[0]['min_value']) {
-          $counterVal = $counterVal + 1;
-        }
-
-        if ($fieldMinVal <= $counterVal) {
-          $errors['min_value'] = ts("Minimum next value field should not be below or equal to {$counterVal}.");
-          return;
-        }
+    if (!empty($fieldMinVal)) {
+      if ($fieldMinVal < 0) {
+        $errors['min_value'] = ts('Minimum next value field should not be below zero.');
+        return;
       }
-    }
 
-    // Check table if not exist yet
-    if (!CRM_Core_DAO::checkTableExists('civicrm_autoincfield_' . $form->getVar('_id'))) {
-      $customFields = \Civi\Api4\CustomField::get()
-        ->addWhere('id', '=', $form->getVar('_id'))
-        ->addChain('name_me_0', \Civi\Api4\CustomGroup::get()
-          ->addWhere('id', '=', '$custom_group_id'),
-        0)
+      if (!is_numeric($fieldMinVal)) {
+        $errors['min_value'] = ts('Minimum next value field should only have numeric value.');
+        return;
+      }
+
+      if ($form->getVar('_id')) {
+        $customFieldID = $form->getVar('_id');
+        $autoincfield = \Civi\Api4\Autoincfield::get()
+        ->addWhere('custom_field_id', '=', $customFieldID)
         ->execute();
 
-      foreach ($customFields as $customField) {
-        $customFieldName = $customField['name'];
-        $customGroupName = $customField['name_me_0']['name'];
-        $customGroupEntity = $customField['name_me_0']['extends'];
+        if (!empty($autoincfield[0]['min_value']) && $fieldMinVal != $autoincfield[0]['min_value']) {
+          $query = "SELECT * FROM `civicrm_autoincfield_$customFieldID` ORDER BY `counter` DESC";
+          $customAutoincfield = CRM_Core_DAO::singleValueQuery($query);
+          $counterVal = $customAutoincfield;
 
-        $apiEntityName = $customGroupEntity;
-        if (
-          $customGroupEntity == 'Individual'
-          || $customGroupEntity == 'Organization'
-          || $customGroupEntity == 'Household'
-        ) {
-          $apiEntityName = 'Contact';
+          if ($counterVal < $autoincfield[0]['min_value']) {
+            $counterVal = $counterVal + 1;
+          }
+
+          if ($fieldMinVal <= $counterVal) {
+            $errors['min_value'] = ts("Minimum next value field should not be below or equal to {$counterVal}.");
+            return;
+          }
         }
+      }
 
-        $apiResults = civicrm_api4($apiEntityName, 'get', [
-          'select' => [
-            "{$customGroupName}.{$customFieldName}",
-          ],
-          'orderBy' => [
-            "{$customGroupName}.{$customFieldName}" => 'DESC',
-          ],
-          'limit' => 1,
-        ]);
-
-        $lastValue = $apiResults[0]["{$customGroupName}.{$customFieldName}"];
+      // Check table if not exist yet
+      if (!CRM_Core_DAO::checkTableExists('civicrm_autoincfield_' . $form->getVar('_id'))) {
+        $lastValue = _autoincfield_civicrm_lastValue($form->getVar('_id'));
 
         if (!empty($lastValue) && $lastValue >= $fieldMinVal) {
           $errors['min_value'] = ts("Since this custom field has existing values. Minimum next value field should not be below or equal to this custom fields last value which is {$lastValue}.");
@@ -155,8 +125,8 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
     $values = $form->_submitValues;
     // Get the id of the latest custom field
     $latestCustomField = \Civi\Api4\CustomField::get()
-      ->addWhere('id', '=', $form->getVar('_id'))
-      ->execute();
+        ->addWhere('id', '=', $form->getVar('_id'))
+        ->execute();
 
     $customFieldID = $latestCustomField[0]['id'];
     $minVal = 0;
@@ -167,6 +137,10 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
 
     // Check table if not exist yet
     if (!CRM_Core_DAO::checkTableExists('civicrm_autoincfield_' . $customFieldID)) {
+      $lastValue = _autoincfield_civicrm_lastValue($form->getVar('_id'));
+      if (!empty($lastValue)) {
+        $minVal = $lastValue + 1;
+      }
       // Save in Autoincfield database
       $createAutoincfield = \Civi\Api4\Autoincfield::create()
         ->addValue('custom_field_id', $customFieldID)
@@ -556,4 +530,52 @@ function _autoincfield_get_nextAutoincValue($fieldID) {
   $lastID = CRM_Core_DAO::singleValueQuery($query);
 
   return $lastID;
+}
+
+/**
+ * Get the last value of an existing integer custom field.
+ *
+ * @param Int $fieldID
+ *
+ * @return Int|NULL
+ *    Custom field last value, or NULL if that can't be determined.
+ */
+function _autoincfield_civicrm_lastValue($customFieldId) {
+  $customFields = \Civi\Api4\CustomField::get()
+    ->addWhere('id', '=', $customFieldId)
+    ->addChain('name_me_0', \Civi\Api4\CustomGroup::get()
+    ->addWhere('id', '=', '$custom_group_id'),
+    0)
+    ->execute();
+
+  $lastValue = NULL;
+
+  foreach ($customFields as $customField) {
+    $customFieldName = $customField['name'];
+    $customGroupName = $customField['name_me_0']['name'];
+    $customGroupEntity = $customField['name_me_0']['extends'];
+
+    $apiEntityName = $customGroupEntity;
+    if (
+      $customGroupEntity == 'Individual'
+      || $customGroupEntity == 'Organization'
+      || $customGroupEntity == 'Household'
+    ) {
+      $apiEntityName = 'Contact';
+    }
+
+    $apiResults = civicrm_api4($apiEntityName, 'get', [
+      'select' => [
+        "{$customGroupName}.{$customFieldName}",
+      ],
+      'orderBy' => [
+        "{$customGroupName}.{$customFieldName}" => 'DESC',
+      ],
+      'limit' => 1,
+    ]);
+
+    $lastValue = $apiResults[0]["{$customGroupName}.{$customFieldName}"];
+  }
+
+  return $lastValue;
 }
