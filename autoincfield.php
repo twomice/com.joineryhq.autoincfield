@@ -141,6 +141,7 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
       if (!empty($lastValue)) {
         $minVal = $lastValue + 1;
       }
+
       // Save in Autoincfield database
       $createAutoincfield = \Civi\Api4\Autoincfield::create()
         ->addValue('custom_field_id', $customFieldID)
@@ -275,15 +276,18 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
 
     // Set getTree function
     $getTreeResults = CRM_Core_BAO_CustomGroup::getTree(
-      $objectName,
-      NULL,
-      $objectId,
-      -1,
-      $subTypes,
-      $subName,
-      NULL,
-      NULL,
-      TRUE
+      $objectName, //  $entityType Of the contact whose contact type is needed.
+      NULL, //  $toReturn What data should be returned. ['custom_group' => ['id', 'name', etc.], 'custom_field' => ['id', 'label', etc.]]
+      $objectId, //  $entityID
+      -1, //  $groupID
+      $subTypes, //  $subTypes
+      $subName, //  $subName
+      NULL, //  $fromCache
+      NULL, //  $onlySubType Only return specified subtype or return specified subtype + unrestricted fields.
+      TRUE, //  $returnAll Do not restrict by subtype at all.
+      NULL, //  $checkPermission
+      NULL, //  $singleRecord holds 'new' or id if view/edit/copy form for a single record is being loaded.
+      NULL //  $showPublicOnly
     );
 
     // Get all data on autoincfield table
@@ -300,39 +304,20 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
       if (!empty($getTreeFields['fields'])) {
         // Get custom group name for updating the values
         $customGroupName = $getTreeFields['name'];
+
         foreach ($getTreeFields['fields'] as $field) {
           $customFieldName = $field['name'];
+          $customFieldTable = "{$customGroupName}.{$customFieldName}";
           // If field id is not empty and it match on the autoincfield data
           if (!empty($autoinc[$field['id']]) && in_array($field['id'], $autoinc[$field['id']])) {
-            $fieldID = $field['id'];
-            $autoincValue = _autoincfield_get_nextAutoincValue($fieldID);
-            if ($autoincValue == NULL) {
-              // Autoincrement value could not be determined. Log an error and do
-              // nothing more on this field.
-              Civi::log()->error('AUTOINCFIELD: could not determined next autoincrement value for custom field ' . $fieldID);
-              continue;
+            // If custom group has extends_entity_column_value, check if it matches the subTypes to save
+            if (!empty($getTreeFields['extends_entity_column_value'])) {
+              if ($getTreeFields['extends_entity_column_value'] == $subTypes) {
+                _autoincfield_autoincfieldDataUpdate($field['id'], $objectName, $objectId, $customFieldTable);
+              }
+            } else {
+              _autoincfield_autoincfieldDataUpdate($field['id'], $objectName, $objectId, $customFieldTable);
             }
-            $apiEntityName = $objectName;
-            if (
-              $objectName == 'Individual'
-              || $objectName == 'Organization'
-              || $objectName == 'Household'
-            ) {
-              $apiEntityName = 'Contact';
-            }
-
-            $results = civicrm_api4($apiEntityName, 'update', [
-              'where' => [
-                ['id', '=', $objectId],
-              ],
-              'values' => [
-                "{$customGroupName}.{$customFieldName}" => $autoincValue,
-              ],
-            ]);
-
-            // Delete data that's more than 24 hours
-            $sqlDeleteData = "DELETE FROM `civicrm_autoincfield_$fieldID` WHERE `timestamp` <= DATE_SUB(NOW(), INTERVAL 1 DAY)";
-            CRM_Core_DAO::executeQuery($sqlDeleteData);
           }
         }
       }
@@ -511,6 +496,44 @@ function autoincfield_civicrm_themes(&$themes) {
 //  ));
 //  _autoincfield_civix_navigationMenu($menu);
 //}
+
+/**
+ * Update autoincfield custom table, update custom field entity value...
+ * and delete autoincfield custom table data in portProcess hook
+ *
+ * @param Int $fieldID, String $objectName, Int $objectId, String $customFieldTable
+ *
+ */
+function _autoincfield_autoincfieldDataUpdate($fieldID, $objectName, $objectId, $customFieldTable) {
+  $autoincValue = _autoincfield_get_nextAutoincValue($fieldID);
+  if ($autoincValue == NULL) {
+    // Autoincrement value could not be determined. Log an error and do
+    // nothing more on this field.
+    Civi::log()->error('AUTOINCFIELD: could not determined next autoincrement value for custom field ' . $fieldID);
+  }
+
+  $apiEntityName = $objectName;
+  if (
+    $objectName == 'Individual'
+    || $objectName == 'Organization'
+    || $objectName == 'Household'
+  ) {
+    $apiEntityName = 'Contact';
+  }
+
+  $results = civicrm_api4($apiEntityName, 'update', [
+    'where' => [
+      ['id', '=', $objectId],
+    ],
+    'values' => [
+      $customFieldTable => $autoincValue,
+    ],
+  ]);
+
+  // Delete data that's more than 24 hours
+  $sqlDeleteData = "DELETE FROM `civicrm_autoincfield_$fieldID` WHERE `timestamp` <= DATE_SUB(NOW(), INTERVAL 1 DAY)";
+  CRM_Core_DAO::executeQuery($sqlDeleteData);
+}
 
 /**
  * For a given autoincfield, determine the appropriate next autoincrement value.
