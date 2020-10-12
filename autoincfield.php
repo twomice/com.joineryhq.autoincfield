@@ -274,6 +274,10 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
         break;
     }
 
+    if ($subTypes === 'null') {
+      $subTypes = NULL;
+    }
+
     // Set getTree function
     $getTreeResults = CRM_Core_BAO_CustomGroup::getTree(
       $objectName, //  $entityType Of the contact whose contact type is needed.
