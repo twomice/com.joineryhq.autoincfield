@@ -272,6 +272,9 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
           }
         }
         break;
+
+      default:
+        return;
     }
 
     if ($subTypes === 'null') {
