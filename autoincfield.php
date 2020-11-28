@@ -10,6 +10,10 @@ function autoincfield_civicrm_pageRun(&$page) {
   if ($pageName == 'CRM_Custom_Page_Field') {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
+
+  if ($pageName == 'CRM_Contact_Page_View_Summary') {
+    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Contact-Page-View-Summary.js', 100, 'page-footer');
+  }
 }
 
 /**
