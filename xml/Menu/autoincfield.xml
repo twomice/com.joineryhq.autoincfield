@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/autoincfield</path>
+    <page_callback>CRM_Autoincfield_Page_Edit</page_callback>
+    <title>Edit</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>
