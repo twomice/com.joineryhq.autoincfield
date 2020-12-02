@@ -5,13 +5,39 @@ require_once 'autoincfield.civix.php';
 use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
+
+/**
+ * Implements hook_civicrm_permission().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_permission
+ */
+function autoincfield_civicrm_permission(&$permissions) {
+  // name of extension or module
+  $prefix = E::ts('CiviCRM Autoincfield') . ': ';
+  $permissions['access Autoincfield'] = array(
+    // label
+    $prefix . E::ts('access Autoincfield'),
+    // description
+    E::ts('Edit CiviCRM Autoincfield value of the user'),
+  );
+}
+
+
+/**
+ * Implements hook_civicrm_pageRun().
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_pageRun
+ */
 function autoincfield_civicrm_pageRun(&$page) {
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Custom_Page_Field') {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
 
-  if ($pageName == 'CRM_Contact_Page_View_Summary') {
+  if ($pageName == 'CRM_Contact_Page_View_Summary' && CRM_Core_Permission::check('access Autoincfield')) {
+    $contactID['contactID'] = CRM_Utils_Request::retrieve('cid', 'Positive');
+
+    CRM_Core_Resources::singleton()->addVars('autoincfield', $contactID);
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Contact-Page-View-Summary.js', 100, 'page-footer');
   }
 }
@@ -181,6 +207,7 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
       // Example code:
       $counterVal = ($minVal - 1);
       CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ('$counterVal', NOW())");
+      // CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_value_autoincrement_11` ADD UNIQUE `autoinc_55` (`autoinc_55`)");
     }
     else {
 

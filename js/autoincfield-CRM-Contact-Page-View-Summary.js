@@ -18,6 +18,7 @@ cj(function($) {
   });
 
   $(document).ajaxComplete(function() {
+    var contactID = CRM.vars.autoincfield.contactID;
     // When ajax is complete, remove existing edit button
     // so it will not duplicate since clicking the edit button
     // popup is still considered an ajax call
@@ -30,7 +31,7 @@ cj(function($) {
 
       // If custom class exist, add button next to the autoincfield value
       if ($(fieldToAppendEdit).length) {
-        $(fieldToAppendEdit).append('<td class="autoinc-edit-button"><a href="/drupal/civicrm/autoincfield?id=' + autoincID + '" class="autoinc-edit crm-popup">Edit</a></td>');
+        $(fieldToAppendEdit).append('<td class="autoinc-edit-button"><a href="/drupal/civicrm/autoincfield?id=' + autoincID + '&cid=' + contactID + '" class="autoinc-edit crm-popup">Edit</a></td>');
       }
     });
   });
