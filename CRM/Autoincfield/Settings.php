@@ -6,7 +6,7 @@
  */
 class CRM_Autoincfield_Settings {
 
-  public static function getAutoincDetails($id, $cid) {
+  public static function getAutoincDetails($id, $cid = NULL) {
     $details = [];
     $autoincfield = \Civi\Api4\Autoincfield::get()
       ->addWhere('custom_field_id', '=', $id)
@@ -30,9 +30,11 @@ class CRM_Autoincfield_Settings {
     $details['details']['table_name'] = $customGroup['table_name'];
 
     // Get and add the current value of the users autoincfield
-    $result = CRM_Core_DAO::executeQuery("SELECT * FROM `{$customGroup['table_name']}` WHERE `entity_id` = {$cid}");
-    while ($result->fetch()) {
-      $details['details']['autoincval'] = $result->{$autoincfield['name_me_0']['column_name']};
+    if ($cid) {
+      $result = CRM_Core_DAO::executeQuery("SELECT * FROM `{$customGroup['table_name']}` WHERE `entity_id` = {$cid}");
+      while ($result->fetch()) {
+        $details['details']['autoincval'] = $result->{$autoincfield['name_me_0']['column_name']};
+      }
     }
 
     // Return all the details we need for the edit page

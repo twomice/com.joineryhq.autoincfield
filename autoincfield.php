@@ -207,7 +207,10 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
       // Example code:
       $counterVal = ($minVal - 1);
       CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ('$counterVal', NOW())");
-      // CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_value_autoincrement_11` ADD UNIQUE `autoinc_55` (`autoinc_55`)");
+
+      // Add unique to the autoincfield column in the civicrm_value_N table
+      $autoincdetails = CRM_Autoincfield_Settings::getAutoincDetails($customFieldID);
+      CRM_Core_DAO::executeQuery("ALTER TABLE `{$autoincdetails['table_name']}` ADD UNIQUE `{$autoincdetails['column_name']}` (`{$autoincdetails['column_name']}`)");
     }
     else {
 
