@@ -2,6 +2,7 @@ cj(function($) {
   // Find each autoincfield in each custom group
   $('.customFieldGroup').each(function(){
     var fieldGroupEdit = $(this).find('.crm-inline-edit');
+    // Get data param for the api
     var fieldGroupData = fieldGroupEdit.data('edit-params');
 
     CRM.api4('CustomField', 'get', {
@@ -9,13 +10,15 @@ cj(function($) {
       chain: {"name_me_0":["Autoincfield", "get", {"where":[["custom_field_id", "=", "$id"]]}]}
     }).then(function(customFields) {
       for (var i in customFields) {
+        // Check if autoinc exist
         if (customFields[i].name_me_0.length) {
-          // Save class and id for autoincfield edit
           fieldGroupEdit.find('.crm-summary-row').each(function() {
+            // Get label to check if its the same as the ajax data label after editing
             var autoincLabel = $('.crm-label', this).text();
             if (customFields[i].label === autoincLabel) {
-              var autoincVal = $('.crm-content', this).text();
+              // Save class and id for autoincfield edit
               $(this).addClass('custom_' + customFields[i].id + '_' + fieldGroupData.customRecId);
+              // Add necessary data for the edit function. It will be used after ajax call
               $('body').append('<div class="autoincfield-item" data-autoinc-id="' + customFields[i].id + '" data-autoinc-rec-id="' + fieldGroupData.customRecId + '" data-field-identifier="custom_' + customFields[i].id + '_' + fieldGroupData.customRecId + '"></div>');
             }
           });
@@ -42,7 +45,8 @@ cj(function($) {
       }
 
       // After closing the edit page of the autoincfield
-      // Replace old value to the new value
+      // check if target-value class exist and
+      // replace old value to the new value
       if ($('.target-value').length && !$('#autoincval').length) {
         // Parse json data to get the new autoincfield value
         var data = JSON.parse('{"' + decodeURI(settings.data.replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}');
@@ -56,6 +60,7 @@ cj(function($) {
       }
     });
 
+    // Remove target value after the submit on the edit popup and loop
     if ($('.target-value').length && !$('#autoincval').length) {
       $('.target-value').removeClass('target-value');
     }

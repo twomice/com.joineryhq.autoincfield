@@ -34,6 +34,7 @@ function autoincfield_civicrm_pageRun(&$page) {
     CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
   }
 
+  // Add edit button in contact page summary if autoincfield exist and permission matches
   if ($pageName == 'CRM_Contact_Page_View_Summary' && CRM_Core_Permission::check('access Autoincfield')) {
     $contactID['contactID'] = CRM_Utils_Request::retrieve('cid', 'Positive');
 
@@ -201,7 +202,6 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
       );
 
       CRM_Core_BAO_SchemaHandler::createTable($table);
-
 
       // TODO: insert a row in $table with counter=($min_value -1);
       // Example code:

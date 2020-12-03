@@ -8,6 +8,7 @@ class CRM_Autoincfield_Settings {
 
   public static function getAutoincDetails($id, $cid = NULL) {
     $details = [];
+    // Get autoincfield and custom field details
     $autoincfield = \Civi\Api4\Autoincfield::get()
       ->addWhere('custom_field_id', '=', $id)
       ->addChain('name_me_0', \Civi\Api4\CustomField::get()
@@ -16,20 +17,22 @@ class CRM_Autoincfield_Settings {
       ->execute()
       ->first();
 
-    // Add Custom field details
+    // Add the details we need
     $details['details'] = $autoincfield['name_me_0'];
     $details['details']['min_value'] = $autoincfield['min_value'];
 
+    // Get the custom group details
     $customGroup = \Civi\Api4\CustomGroup::get()
       ->addWhere('id', '=', $autoincfield['name_me_0']['custom_group_id'])
       ->execute()
       ->first();
 
-    // Add Custom Group details that we need
+    // Add custom group details that we need
     $details['details']['custom_group_title'] = $customGroup['title'];
     $details['details']['table_name'] = $customGroup['table_name'];
 
-    // Get and add the current value of the users autoincfield
+    // If contact id exist,
+    // get and add the current value of the users autoincfield
     if ($cid) {
       $result = CRM_Core_DAO::executeQuery("SELECT * FROM `{$customGroup['table_name']}` WHERE `entity_id` = {$cid}");
       while ($result->fetch()) {
