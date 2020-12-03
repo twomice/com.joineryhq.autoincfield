@@ -9,9 +9,9 @@ cj(function($) {
       where: [["custom_group_id", "=", fieldGroupData.groupID]],
       chain: {"name_me_0":["Autoincfield", "get", {"where":[["custom_field_id", "=", "$id"]]}]}
     }).then(function(customFields) {
-      for (var i in customFields) {
+      for (var i = 0; i < customFields.length; i++) {
         // Check if autoinc exist
-        if (customFields[i].name_me_0.length) {
+        if (customFields[i].name_me_0 && customFields[i].name_me_0.length) {
           fieldGroupEdit.find('.crm-summary-row').each(function() {
             // Get label to check if its the same as the ajax data label after editing
             var autoincLabel = $('.crm-label', this).text();
