@@ -1,4 +1,4 @@
-cj(function($) {
+CRM.$(function($) {
   // Find each autoincfield in each custom group
   $('.customFieldGroup').each(function(){
     var fieldGroupEdit = $(this).find('.crm-inline-edit');

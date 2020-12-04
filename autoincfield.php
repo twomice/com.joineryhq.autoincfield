@@ -31,7 +31,7 @@ function autoincfield_civicrm_permission(&$permissions) {
 function autoincfield_civicrm_pageRun(&$page) {
   $pageName = $page->getVar('_name');
   if ($pageName == 'CRM_Custom_Page_Field') {
-    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Custom-Page-Field.js', 100, 'page-footer');
+    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/CRM_Custom_Page_Field.js', 100, 'page-footer');
   }
 
   // Add edit button in contact page summary if autoincfield exist and permission matches
@@ -39,7 +39,7 @@ function autoincfield_civicrm_pageRun(&$page) {
     $contactID['contactID'] = CRM_Utils_Request::retrieve('cid', 'Positive');
 
     CRM_Core_Resources::singleton()->addVars('autoincfield', $contactID);
-    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield-CRM-Contact-Page-View-Summary.js', 100, 'page-footer');
+    CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/CRM_Contact_Page_View_Summary.js', 100, 'page-footer');
   }
 }
 
@@ -52,12 +52,13 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Custom_Form_Field') {
     if ($form->elementExists('data_type')) {
       // Add autoincfield js
-      CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/autoincfield.js', 100, 'page-footer');
+      CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/CRM_Custom_Form_Field.js', 100, 'page-footer');
 
       // Create necessary fields
       $form->addElement('checkbox', 'autoinc', ts('Is Autoincrement?'));
       $form->addElement('text', 'min_value', ts('Minimum next value'));
       // Assign bhfe fields to the template.
+      $tpl = CRM_Core_Smarty::singleton();
       $tpl = CRM_Core_Smarty::singleton();
       $bhfe = $tpl->get_template_vars('beginHookFormElements');
       if (!$bhfe) {

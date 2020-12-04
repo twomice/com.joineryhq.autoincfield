@@ -1,6 +1,6 @@
-cj(function($) {
-  cj('.crm-entity').each(function(){
-    var $this = cj(this);
+CRM.$(function($) {
+  $('.crm-entity').each(function(){
+    var $this = $(this);
     var customFieldID = $this.find('td:first-child').text();
 
     CRM.api4('Autoincfield', 'get', {
