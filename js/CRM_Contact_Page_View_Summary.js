@@ -42,7 +42,7 @@ CRM.$(function($) {
       // If custom class exist, add button next to the autoincfield value
       if ($('.' + fieldIdentifier + '-row').length) {
         var url = CRM.url('civicrm/autoincfield', {id: autoincID, cid: contactID}, 'back');
-        $('.' + fieldIdentifier + '-row').append('<td class="autoinc-edit-button"><a href="' +  url + '" class="autoinc-edit crm-popup">Edit</a></td>');
+        $('.' + fieldIdentifier + '-row .html-adjust').append('<span class="autoinc-edit-button"><a href="' +  url + '" class="autoinc-edit crm-popup">Edit</a></span>');
       }
 
       // After closing the edit page of the autoincfield
