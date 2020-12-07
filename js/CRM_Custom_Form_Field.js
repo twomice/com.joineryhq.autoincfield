@@ -10,7 +10,7 @@ CRM.$(function($) {
     $('.form-layout-compressed').remove();
 
     // Add min value field description
-    $('#min_value').parent().append('<br /><span class="description"> WARNING: This value can\'t be decreased, e..g if you set it to 10 now, you\'ll never be able to set it to 9 or below.</span>');
+    $('#min_value').parent().append('<br /><span class="description">' + ts('WARNING: This value can\'t be decreased, e..g if you set it to 10 now, you\'ll never be able to set it to 9 or below.') + '</span>');
 
     // If edit page
     if($('#autoinc').is(':checked')) {
