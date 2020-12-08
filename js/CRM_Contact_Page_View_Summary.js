@@ -43,7 +43,7 @@ CRM.$(function($) {
 
       // Fix bug for not showing a value when the field without value is edited and saved.
       if (!$('#' + fieldIdentifier).val()) {
-        $('.custom_field-row').eq(fieldIndex).addClass(fieldIdentifier + '-row');
+        $('.hasAutoinc-' + autoincID).find('.custom_field-row').eq(fieldIndex).addClass(fieldIdentifier + '-row');
         var newFieldIdentifier = $('.' + fieldIdentifier + '-row').find('input').attr('id');
         $(this).data('field-identifier', newFieldIdentifier);
         fieldIdentifier = newFieldIdentifier;
