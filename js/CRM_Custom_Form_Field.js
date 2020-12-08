@@ -24,7 +24,7 @@ CRM.$(function($) {
 
       // Add Autoincrement text next to Integer if autoinc field is checked
       var $dataTypeField = $('.crm-custom-field-form-block-data_type .crm-frozen-field');
-      $dataTypeField.html($dataTypeField.html().replace('Integer','Integer (Autoincrement)'));
+      $dataTypeField.html($dataTypeField.html().replace('Integer', ts('Integer (Autoincrement)')));
     }
 
     // Show autoincfield if data type matches
