@@ -5,7 +5,6 @@ require_once 'autoincfield.civix.php';
 use CRM_Autoincfield_ExtensionUtil as E;
 // phpcs:enable
 
-
 /**
  * Implements hook_civicrm_permission().
  *
@@ -21,7 +20,6 @@ function autoincfield_civicrm_permission(&$permissions) {
     E::ts('Edit CiviCRM Autoincfield value of the user'),
   );
 }
-
 
 /**
  * Implements hook_civicrm_pageRun().
@@ -113,8 +111,8 @@ function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form,
       if ($form->getVar('_id')) {
         $customFieldID = $form->getVar('_id');
         $autoincfield = \Civi\Api4\Autoincfield::get()
-        ->addWhere('custom_field_id', '=', $customFieldID)
-        ->execute();
+          ->addWhere('custom_field_id', '=', $customFieldID)
+          ->execute();
 
         if (!empty($autoincfield[0]['min_value']) && $fieldMinVal != $autoincfield[0]['min_value']) {
           $query = "SELECT * FROM `civicrm_autoincfield_$customFieldID` ORDER BY `counter` DESC";
@@ -157,8 +155,8 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
     $values = $form->_submitValues;
     // Get the id of the latest custom field
     $latestCustomField = \Civi\Api4\CustomField::get()
-        ->addWhere('id', '=', $form->getVar('_id'))
-        ->execute();
+      ->addWhere('id', '=', $form->getVar('_id'))
+      ->execute();
 
     $customFieldID = $latestCustomField[0]['id'];
     $minVal = 0;
@@ -216,15 +214,15 @@ function autoincfield_civicrm_postProcess($formName, &$form) {
     else {
 
       $autoincfield = \Civi\Api4\Autoincfield::get()
-      ->addWhere('custom_field_id', '=', $customFieldID)
-      ->execute();
+        ->addWhere('custom_field_id', '=', $customFieldID)
+        ->execute();
 
       if ($minVal != $autoincfield[0]['min_value']) {
         // If table exist, its the update page, update min_value only
         $updateResults = \Civi\Api4\Autoincfield::update()
-        ->addWhere('custom_field_id', '=', $customFieldID)
-        ->addValue('min_value', $minVal)
-        ->execute();
+          ->addWhere('custom_field_id', '=', $customFieldID)
+          ->addValue('min_value', $minVal)
+          ->execute();
 
         $counterVal = ($minVal - 1);
         CRM_Core_DAO::executeQuery("INSERT INTO civicrm_autoincfield_{$customFieldID} (`counter`, `timestamp`) VALUES ('$counterVal', NOW())");
@@ -318,18 +316,30 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
 
     // Set getTree function
     $getTreeResults = CRM_Core_BAO_CustomGroup::getTree(
-      $objectName, //  $entityType Of the contact whose contact type is needed.
-      NULL, //  $toReturn What data should be returned. ['custom_group' => ['id', 'name', etc.], 'custom_field' => ['id', 'label', etc.]]
-      $objectId, //  $entityID
-      -1, //  $groupID
-      $subTypes, //  $subTypes
-      $subName, //  $subName
-      NULL, //  $fromCache
-      NULL, //  $onlySubType Only return specified subtype or return specified subtype + unrestricted fields.
-      TRUE, //  $returnAll Do not restrict by subtype at all.
-      NULL, //  $checkPermission
-      NULL, //  $singleRecord holds 'new' or id if view/edit/copy form for a single record is being loaded.
-      NULL //  $showPublicOnly
+      //  $entityType Of the contact whose contact type is needed.
+      $objectName,
+      //  $toReturn What data should be returned. ['custom_group' => ['id', 'name', etc.], 'custom_field' => ['id', 'label', etc.]]
+      NULL,
+      //  $entityID
+      $objectId,
+      //  $groupID
+      -1,
+      //  $subTypes
+      $subTypes,
+      //  $subName
+      $subName,
+      //  $fromCache
+      NULL,
+      //  $onlySubType Only return specified subtype or return specified subtype + unrestricted fields.
+      NULL,
+      //  $returnAll Do not restrict by subtype at all.
+      TRUE,
+      //  $checkPermission
+      NULL,
+      //  $singleRecord holds 'new' or id if view/edit/copy form for a single record is being loaded.
+      NULL,
+      //  $showPublicOnly
+      NULL
     );
 
     // Get all data on autoincfield table
@@ -357,7 +367,8 @@ function autoincfield_civicrm_post($op, $objectName, $objectId, &$objectRef) {
               if ($getTreeFields['extends_entity_column_value'] == $subTypes) {
                 _autoincfield_autoincfieldDataUpdate($field['id'], $objectName, $objectId, $customFieldTable);
               }
-            } else {
+            }
+            else {
               _autoincfield_autoincfieldDataUpdate($field['id'], $objectName, $objectId, $customFieldTable);
             }
           }
@@ -583,7 +594,7 @@ function _autoincfield_autoincfieldDataUpdate($fieldID, $objectName, $objectId, 
  * @param Int $fieldID
  *
  * @return Int|NULL
- *    Integer next value, or NULL if that can't be determined.
+ *   Integer next value, or NULL if that can't be determined.
  */
 function _autoincfield_get_nextAutoincValue($fieldID) {
   // Save to the database autoincfield custom table
@@ -600,16 +611,16 @@ function _autoincfield_get_nextAutoincValue($fieldID) {
 /**
  * Get the last value of an existing integer custom field.
  *
- * @param Int $fieldID
+ * @param Int $customFieldId
  *
  * @return Int|NULL
- *    Custom field last value, or NULL if that can't be determined.
+ *   Custom field last value, or NULL if that can't be determined.
  */
 function _autoincfield_civicrm_lastValue($customFieldId) {
   $customFields = \Civi\Api4\CustomField::get()
     ->addWhere('id', '=', $customFieldId)
     ->addChain('name_me_0', \Civi\Api4\CustomGroup::get()
-    ->addWhere('id', '=', '$custom_group_id'),
+      ->addWhere('id', '=', '$custom_group_id'),
     0)
     ->execute();
 

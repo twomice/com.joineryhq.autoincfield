@@ -36,7 +36,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
     $autoincdetails = CRM_Autoincfield_Settings::getAutoincDetails($this->_id, $this->_cid);
 
     CRM_Utils_System::setTitle(E::ts('Edit Autoincfield: %1', array(
-      '1' => $autoincdetails['custom_group_title']
+      '1' => $autoincdetails['custom_group_title'],
     )));
   }
 
@@ -109,7 +109,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
         $errors['autoincval'] = E::ts(
           'Value should be equal or lower than the minimum value of the autoincfield custom field. Current minimum value: %1',
           array(
-            1 => $autoincdetails['min_value']
+            1 => $autoincdetails['min_value'],
           )
         );
       }
@@ -141,7 +141,8 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
     ));
     if ($result->fetch()) {
       $query = "UPDATE `{$autoincdetails['table_name']}` SET `{$autoincdetails['column_name']}` = %0 WHERE `entity_id` = %1";
-    } else {
+    }
+    else {
       $query = "INSERT INTO `{$autoincdetails['table_name']}` (`entity_id`, `{$autoincdetails['column_name']}`) VALUES (%1, %0)";
     }
 
@@ -154,7 +155,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
       E::ts(
         '%1 Saved',
         array(
-          1 => $autoincdetails['label']
+          1 => $autoincdetails['label'],
         )
       ),
       $autoincdetails['custom_group_title'],
