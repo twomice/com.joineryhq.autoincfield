@@ -55,8 +55,8 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
       CRM_Core_Resources::singleton()->addScriptFile('com.joineryhq.autoincfield', 'js/CRM_Custom_Form_Field.js', 100, 'page-footer');
 
       // Create necessary fields
-      $form->addElement('checkbox', 'autoinc', ts('Is Autoincrement?'));
-      $form->addElement('text', 'min_value', ts('Minimum next value'));
+      $form->addElement('checkbox', 'autoinc', E::ts('Is Autoincrement?'));
+      $form->addElement('text', 'min_value', E::ts('Minimum next value'));
       // Assign bhfe fields to the template.
       $tpl = CRM_Core_Smarty::singleton();
       $tpl = CRM_Core_Smarty::singleton();
@@ -101,12 +101,12 @@ function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form,
 
     if (!empty($fieldMinVal)) {
       if ($fieldMinVal < 0) {
-        $errors['min_value'] = ts('Minimum next value field should not be below zero.');
+        $errors['min_value'] = E::ts('Minimum next value field should not be below zero.');
         return;
       }
 
       if (!is_numeric($fieldMinVal)) {
-        $errors['min_value'] = ts('Minimum next value field should only have numeric value.');
+        $errors['min_value'] = E::ts('Minimum next value field should only have numeric value.');
         return;
       }
 
@@ -126,7 +126,7 @@ function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form,
           }
 
           if ($fieldMinVal <= $counterVal) {
-            $errors['min_value'] = ts("Minimum next value field should not be below or equal to {$counterVal}.");
+            $errors['min_value'] = E::ts("Minimum next value field should not be below or equal to {$counterVal}.");
             return;
           }
         }
@@ -137,7 +137,7 @@ function autoincfield_civicrm_validateForm($formName, &$fields, &$files, &$form,
         $lastValue = _autoincfield_civicrm_lastValue($form->getVar('_id'));
 
         if (!empty($lastValue) && $lastValue >= $fieldMinVal) {
-          $errors['min_value'] = ts("Since this custom field has existing values. Minimum next value field should not be below or equal to this custom fields last value which is {$lastValue}.");
+          $errors['min_value'] = E::ts("Since this custom field has existing values. Minimum next value field should not be below or equal to this custom fields last value which is {$lastValue}.");
           return;
         }
       }
