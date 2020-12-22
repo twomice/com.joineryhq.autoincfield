@@ -36,7 +36,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
     $autoincdetails = CRM_Autoincfield_Settings::getAutoincDetails($this->_id, $this->_cid);
 
     CRM_Utils_System::setTitle(E::ts('Edit Autoincfield: %1', array(
-      '1' => $autoincdetails['custom_group_title']
+      '1' => $autoincdetails['custom_group_title'],
     )));
   }
 
@@ -46,6 +46,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
     $this->add('text',
       'autoincval',
       $autoincdetails['label'],
+      '',
       TRUE
     );
 
@@ -103,12 +104,12 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
     $errors = [];
     $autoincdetails = CRM_Autoincfield_Settings::getAutoincDetails($values['autoincID'], $values['contactID']);
 
-    if ($autoincdetails['autoincval'] != $values['autoincval']) {
+    if (!empty($values['autoincval']) && $autoincdetails['autoincval'] != $values['autoincval']) {
       if ($autoincdetails['min_value'] < $values['autoincval']) {
         $errors['autoincval'] = E::ts(
           'Value should be equal or lower than the minimum value of the autoincfield custom field. Current minimum value: %1',
           array(
-            1 => $autoincdetails['min_value']
+            1 => $autoincdetails['min_value'],
           )
         );
       }
@@ -135,7 +136,16 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
       return;
     }
 
-    $query = "UPDATE `{$autoincdetails['table_name']}` SET `{$autoincdetails['column_name']}` = %0 WHERE `entity_id` = %1";
+    $result = CRM_Core_DAO::executeQuery("SELECT * FROM `{$autoincdetails['table_name']}` WHERE `entity_id` = %0", array(
+      0 => array($this->_cid, 'Integer'),
+    ));
+    if ($result->fetch()) {
+      $query = "UPDATE `{$autoincdetails['table_name']}` SET `{$autoincdetails['column_name']}` = %0 WHERE `entity_id` = %1";
+    }
+    else {
+      $query = "INSERT INTO `{$autoincdetails['table_name']}` (`entity_id`, `{$autoincdetails['column_name']}`) VALUES (%1, %0)";
+    }
+
     CRM_Core_DAO::executeQuery($query, array(
       0 => array($values['autoincval'], 'Integer'),
       1 => array($this->_cid, 'Integer'),
@@ -145,7 +155,7 @@ class CRM_Autoincfield_Form_Edit extends CRM_Core_Form {
       E::ts(
         '%1 Saved',
         array(
-          1 => $autoincdetails['label']
+          1 => $autoincdetails['label'],
         )
       ),
       $autoincdetails['custom_group_title'],

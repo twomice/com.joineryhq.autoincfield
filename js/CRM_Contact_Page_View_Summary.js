@@ -1,4 +1,4 @@
-cj(function($) {
+CRM.$(function($) {
   // Find each autoincfield in each custom group
   $('.customFieldGroup').each(function(){
     var fieldGroupEdit = $(this).find('.crm-inline-edit');
@@ -13,13 +13,14 @@ cj(function($) {
         // Check if autoinc exist
         if (customFields[i].name_me_0 && customFields[i].name_me_0.length) {
           fieldGroupEdit.find('.crm-summary-row').each(function() {
+            $(this).parents('.customFieldGroup').addClass('hasAutoinc-' + customFields[i].id);
             // Get label to check if its the same as the ajax data label after editing
             var autoincLabel = $('.crm-label', this).text();
             if (customFields[i].label === autoincLabel) {
               // Save class and id for autoincfield edit
               $(this).addClass('custom_' + customFields[i].id + '_' + fieldGroupData.customRecId);
               // Add necessary data for the edit function. It will be used after ajax call
-              $('body').append('<div class="autoincfield-item" data-autoinc-id="' + customFields[i].id + '" data-autoinc-rec-id="' + fieldGroupData.customRecId + '" data-field-identifier="custom_' + customFields[i].id + '_' + fieldGroupData.customRecId + '"></div>');
+              $('body').append('<div class="autoincfield-item" data-autoinc-id="' + customFields[i].id + '" data-autoinc-index="' + $(this).index() + '" data-field-identifier="custom_' + customFields[i].id + '_' + fieldGroupData.customRecId + '"></div>');
             }
           });
         }
@@ -37,12 +38,21 @@ cj(function($) {
     // Loop each autoincfield details
     $('.autoincfield-item').each(function(){
       var fieldIdentifier = $(this).data('field-identifier');
+      var fieldIndex = $(this).data('autoinc-index') - 1;
       var autoincID = $(this).data('autoinc-id');
+
+      // Fix bug for not showing a value when the field without value is edited and saved.
+      if (!$('#' + fieldIdentifier).val()) {
+        $('.hasAutoinc-' + autoincID).find('.custom_field-row').eq(fieldIndex).addClass(fieldIdentifier + '-row');
+        var newFieldIdentifier = $('.' + fieldIdentifier + '-row').find('input').attr('id');
+        $(this).data('field-identifier', newFieldIdentifier);
+        fieldIdentifier = newFieldIdentifier;
+      }
 
       // If custom class exist, add button next to the autoincfield value
       if ($('.' + fieldIdentifier + '-row').length) {
         var url = CRM.url('civicrm/autoincfield', {id: autoincID, cid: contactID}, 'back');
-        $('.' + fieldIdentifier + '-row').append('<td class="autoinc-edit-button"><a href="' +  url + '" class="autoinc-edit crm-popup">Edit</a></td>');
+        $('.' + fieldIdentifier + '-row .html-adjust').append('<span class="autoinc-edit-button"><a href="' + url + '" class="autoinc-edit crm-popup">' + ts('Edit') + '</a></span>');
       }
 
       // After closing the edit page of the autoincfield
@@ -53,10 +63,14 @@ cj(function($) {
         var data = JSON.parse('{"' + decodeURI(settings.data.replace(/&/g, "\",\"").replace(/=/g,"\":\"")) + '"}');
         if ($(this).data('autoinc-id') == data.autoincID) {
           $('.crm-summary-row.' + fieldIdentifier).find('.crm-content').text(data.autoincval);
-          $('#' + fieldIdentifier).val(data.autoincval);
-          var editDisplay = $('.' + fieldIdentifier + '-row .crm-frozen-field').html();
-          var oldValueText = $('.' + fieldIdentifier + '-row .crm-frozen-field').text();
-          $('.' + fieldIdentifier + '-row .crm-frozen-field').html(editDisplay.replace(oldValueText, data.autoincval));
+          if (!$('#' + fieldIdentifier).val()) {
+            $('#' + fieldIdentifier).before(data.autoincval);
+          } else {
+            $('#' + fieldIdentifier).val(data.autoincval);
+            var editDisplay = $('.' + fieldIdentifier + '-row .crm-frozen-field').html();
+            var oldValueText = $('.' + fieldIdentifier + '-row .crm-frozen-field').text();
+            $('.' + fieldIdentifier + '-row .crm-frozen-field').html(editDisplay.replace(oldValueText, data.autoincval));
+          }
         }
       }
     });
