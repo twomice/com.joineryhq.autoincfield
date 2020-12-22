@@ -57,7 +57,6 @@ function autoincfield_civicrm_buildForm($formName, &$form) {
       $form->addElement('text', 'min_value', E::ts('Minimum next value'));
       // Assign bhfe fields to the template.
       $tpl = CRM_Core_Smarty::singleton();
-      $tpl = CRM_Core_Smarty::singleton();
       $bhfe = $tpl->get_template_vars('beginHookFormElements');
       if (!$bhfe) {
         $bhfe = array();
