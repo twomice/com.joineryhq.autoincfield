@@ -7,7 +7,7 @@ CRM.$(function($) {
     $isAutoinc.addClass('crm-custom-field-form-block-min_value autoinc-field').attr('id','autoinc-field').hide();
     $minVal.insertAfter('#hideDesc');
     var insertIsAutoinc = '.crm-custom-field-form-block-data_type';
-    $('.form-layout-compressed').remove();
+    $('.CRM_Custom_Form_Field > .form-layout-compressed').remove();
 
     // Add min value field description
     $('#min_value').parent().append('<br /><span class="description">' + ts('WARNING: This value can\'t be decreased, e..g if you set it to 10 now, you\'ll never be able to set it to 9 or below.') + '</span>');
